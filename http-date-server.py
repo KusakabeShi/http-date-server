@@ -1,6 +1,7 @@
 import os
 import sys
 import shlex
+import pathlib
 import requests
 import subprocess
 import tornado.web
@@ -8,6 +9,8 @@ import tornado.gen
 import tornado.ioloop
 
 listen_port = os.environ["WGET_DATE_SERVER_PORT"]
+
+pathlib.Path("smallenv").mkdir(parents=True, exist_ok=True)
 
 if not os.path.isfile("smallenv/bin/ash"):
     r = requests.get("https://www.busybox.net/downloads/binaries/1.30.0-i686/busybox")  
