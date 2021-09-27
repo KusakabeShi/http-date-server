@@ -60,6 +60,8 @@ class actionHandler(tornado.web.RequestHandler):
         super(actionHandler, self).__init__(*args, **kwargs)
     def initialize(self):
         self.request.raw_uri = self.request.uri
+    def prepare(self):
+        self.set_header("Content-Type", "text/plain")
     def set_default_headers(self, *args, **kwargs):
         return
     def decode_argument(self,value, name = None):
