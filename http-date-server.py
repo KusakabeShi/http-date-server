@@ -27,8 +27,8 @@ def get_date(params):
         # this is the parent process... do whatever needs to be done as the parent
         os.close(w_out)
         os.close(w_err)
-        r1 = os.fdopen(r_out)
-        r2 = os.fdopen(r_err)
+        r1 = os.fdopen(r_out,encoding="utf8)
+        r2 = os.fdopen(r_err,encoding="utf8)
         exit_status = os.waitpid(pid,0)
         out = r1.read()
         err = r2.read()
@@ -42,8 +42,8 @@ def get_date(params):
         os.chdir("/")
         os.setgid(95479547) # Important! Set GID first! See comments for details.
         os.setuid(95479547)
-        w1 = os.fdopen(w_out, "w")
-        w2 = os.fdopen(w_err, "w")
+        w1 = os.fdopen(w_out, "w",encoding="utf8)
+        w2 = os.fdopen(w_err, "w",encoding="utf8)
         sys.stdout = w1
         sys.stderr = w2
         sparams = shlex.split(params)
