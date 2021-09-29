@@ -7,13 +7,14 @@ import subprocess
 import tornado.web
 import tornado.gen
 import tornado.ioloop
+from pwd import getpwnam
 
 listen_port = os.environ["WGET_DATE_SERVER_PORT"]
 
 pathlib.Path("smallenv/bin").mkdir(parents=True, exist_ok=True)
 
 if not os.path.isfile("smallenv/bin/ash"):
-    r = requests.get("https://www.busybox.net/downloads/binaries/1.30.0-i686/busybox")  
+    r = requests.get("https://www.busybox.net/downloads/binaries/1.30.0-i686/busybox")
     with open('smallenv/busybox', 'wb') as f:
         f.write(r.content)
     os.chmod("smallenv/busybox", 0o755)
@@ -37,11 +38,13 @@ def get_date(params):
             code = 400
         return code ,  out + err
     else:
-        os.chdir("smallenv")
-        os.chroot(".")
-        os.chdir("/")
-        os.setgid(95479547) # Important! Set GID first! See comments for details.
-        os.setuid(95479547)
+        if os.getuid() == 0:
+            nuid,ngid = getpwnam('nobody')[2:4]
+            os.chdir("smallenv")
+            os.chroot(".")
+            os.chdir("/")
+            os.setgid(nuid) # Important! Set GID first! See comments for details.
+            os.setuid(ngid)
         w1 = os.fdopen(w_out, "w",encoding="utf8")
         w2 = os.fdopen(w_err, "w",encoding="utf8")
         sys.stdout = w1
@@ -54,7 +57,7 @@ def get_date(params):
         os.execv("/bin/date" ,["date"]+ sparams)
         #subprocess.Popen(["/bin/date"] + sparams , stdin=subprocess.PIPE,stdout=w1,stderr=w2).communicate()
         #sys.exit(0)
-    
+
 class actionHandler(tornado.web.RequestHandler):
     def __init__(self, *args, **kwargs):
         super(actionHandler, self).__init__(*args, **kwargs)
@@ -66,9 +69,9 @@ class actionHandler(tornado.web.RequestHandler):
         return
     def decode_argument(self,value, name = None):
         return ""
-    async def head(self, *args, **kwargs): 
+    async def head(self, *args, **kwargs):
         self.write("")
-    async def get(self, *args, **kwargs): 
+    async def get(self, *args, **kwargs):
         code, ret = get_date(self.request.raw_uri[1:])
         self.set_status(code)
         self.write(ret)
