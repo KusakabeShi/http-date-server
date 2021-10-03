@@ -1,6 +1,7 @@
 import os
 import sys
 import shlex
+import urllib
 import pathlib
 import requests
 import subprocess
@@ -58,23 +59,73 @@ def get_date(params):
         #subprocess.Popen(["/bin/date"] + sparams , stdin=subprocess.PIPE,stdout=w1,stderr=w2).communicate()
         #sys.exit(0)
 
+date_args=[
+	"%%",
+	"%a",
+	"%A",
+	"%b",
+	"%B",
+	"%c",
+	"%C",
+	"%d",
+	"%D",
+	"%e",
+	"%F",
+	"%g",
+	"%G",
+	"%h",
+	"%H",
+	"%I",
+	"%j",
+	"%k",
+	"%l",
+	"%m",
+	"%M",
+	"%n",
+	"%N",
+	"%p",
+	"%P",
+	"%q",
+	"%r",
+	"%R",
+	"%s",
+	"%S",
+	"%t",
+	"%T",
+	"%u",
+	"%U",
+	"%V",
+	"%w",
+	"%W",
+	"%x",
+	"%X",
+	"%y",
+	"%Y",
+	"%z",
+	"%:",
+	"%Z"
+]
+        
 class actionHandler(tornado.web.RequestHandler):
     def __init__(self, *args, **kwargs):
         super(actionHandler, self).__init__(*args, **kwargs)
     def initialize(self):
-        self.request.raw_uri = self.request.uri
+        for a in date_args:
+            if a in self.request.uri:
+                print(self.request.uri)
+                self.request.uri = self.request.uri.replace(a,a.replace("%","%25"))
     def prepare(self):
         self.set_header("Content-Type", "text/plain")
     def set_default_headers(self, *args, **kwargs):
         return
-    def decode_argument(self,value, name = None):
-        return ""
     async def head(self, *args, **kwargs):
         self.write("")
     async def get(self, *args, **kwargs):
-        code, ret = get_date(self.request.raw_uri[1:])
-        self.set_status(code)
+        params = urllib.parse.unquote(self.request.uri[1:])
+        code, ret = get_date(params)
+        self.set_status(200)
         self.write(ret)
+        self.finish()
 
 if __name__ == '__main__':
     app = tornado.web.Application(handlers=[
