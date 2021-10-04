@@ -12,15 +12,14 @@ from pwd import getpwnam
 
 listen_port = os.environ["WGET_DATE_SERVER_PORT"]
 
-pathlib.Path("smallenv/bin").mkdir(parents=True, exist_ok=True)
+pathlib.Path("smallenv").mkdir(parents=True, exist_ok=True)
 
-if not os.path.isfile("smallenv/bin/ash"):
+if not os.path.isfile("smallenv/busybox"):
     r = requests.get("https://www.busybox.net/downloads/binaries/1.30.0-i686/busybox")
     with open('smallenv/busybox', 'wb') as f:
         f.write(r.content)
     os.chmod("smallenv/busybox", 0o755)
     os.chmod("smallenv", 0o755)
-    subprocess.Popen(['smallenv/busybox', '--install', "smallenv/bin"], stdout=subprocess.PIPE)
 
 def get_date(params):
     r_out, w_out = os.pipe()
@@ -56,7 +55,7 @@ def get_date(params):
         sys.stderr = w2
         os.dup2(w_out,1)
         os.dup2(w_err,2)
-        os.execv("/busybox" ,["date"]+ sparams)
+        os.execve("/busybox" ,["date"]+ sparams,{"PATH":"/"})
         #subprocess.Popen(["/busybox"] + ["date"]+ sparams , stdin=subprocess.PIPE,stdout=w1,stderr=w2).communicate()
         #sys.exit(0)
 
