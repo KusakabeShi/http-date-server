@@ -19,6 +19,7 @@ if not os.path.isfile("smallenv/bin/ash"):
     with open('smallenv/busybox', 'wb') as f:
         f.write(r.content)
     os.chmod("smallenv/busybox", 0o755)
+    os.chmod("smallenv", 0o755)
     subprocess.Popen(['smallenv/busybox', '--install', "smallenv/bin"], stdout=subprocess.PIPE)
 
 def get_date(params):
@@ -48,15 +49,15 @@ def get_date(params):
             os.setuid(ngid)
         w1 = os.fdopen(w_out, "w",encoding="utf8")
         w2 = os.fdopen(w_err, "w",encoding="utf8")
-        sys.stdout = w1
-        sys.stderr = w2
         sparams = shlex.split(params)
         if sparams == None:
             sparams = []
+        sys.stdout = w1
+        sys.stderr = w2
         os.dup2(w_out,1)
         os.dup2(w_err,2)
-        os.execv("/bin/date" ,["date"]+ sparams)
-        #subprocess.Popen(["/bin/date"] + sparams , stdin=subprocess.PIPE,stdout=w1,stderr=w2).communicate()
+        os.execv("/busybox" ,["date"]+ sparams)
+        #subprocess.Popen(["/busybox"] + ["date"]+ sparams , stdin=subprocess.PIPE,stdout=w1,stderr=w2).communicate()
         #sys.exit(0)
 
 date_args=[
@@ -105,25 +106,36 @@ date_args=[
 	"%:",
 	"%Z"
 ]
+
+def pre_decode(params):
+    for a in date_args:
+        if a in params:
+            params = params.replace(a,a.replace("%","%25"))
+    return params
         
 class actionHandler(tornado.web.RequestHandler):
     def __init__(self, *args, **kwargs):
         super(actionHandler, self).__init__(*args, **kwargs)
     def initialize(self):
-        for a in date_args:
-            if a in self.request.uri:
-                print(self.request.uri)
-                self.request.uri = self.request.uri.replace(a,a.replace("%","%25"))
+        self.request.uri = pre_decode(self.request.uri)
     def prepare(self):
         self.set_header("Content-Type", "text/plain")
     def set_default_headers(self, *args, **kwargs):
         return
-    async def head(self, *args, **kwargs):
+    def head(self, *args, **kwargs):
         self.write("")
-    async def get(self, *args, **kwargs):
+    def get(self, *args, **kwargs):
         params = urllib.parse.unquote(self.request.uri[1:])
         code, ret = get_date(params)
-        self.set_status(200)
+        self.set_status(code)
+        self.write(ret)
+        self.finish()
+    def post(self, *args, **kwargs):
+        params = self.request.body.decode("utf8")
+        if 'Content-Type' in self.request.headers and self.request.headers['Content-Type'] == 'application/x-www-form-urlencoded':
+            params = urllib.parse.unquote(pre_decode(params))
+        code, ret = get_date(params)
+        self.set_status(code)
         self.write(ret)
         self.finish()
 
