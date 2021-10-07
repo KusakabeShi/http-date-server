@@ -131,8 +131,6 @@ class actionHandler(tornado.web.RequestHandler):
         self.finish()
     def post(self, *args, **kwargs):
         params = self.request.body.decode("utf8")
-        if 'Content-Type' in self.request.headers and self.request.headers['Content-Type'] == 'application/x-www-form-urlencoded':
-            params = urllib.parse.unquote(pre_decode(params))
         code, ret = get_date(params)
         self.set_status(code)
         self.write(ret)
